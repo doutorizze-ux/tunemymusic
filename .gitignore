@@ -1,0 +1,17 @@
+venv/
+.pytest_cache/
+__pycache__/
+node_modules/
+*.pyc
+.DS_Store
+.vscode/
+.env
+*.log
+backend/creds
+create_db.py
+flask_session/
+.flask_session/
+*.tsbuildinfo
+cookies.txt
+cookies.json
+*.pem

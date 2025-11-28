@@ -1,0 +1,244 @@
+import { useState, useEffect } from "react";
+import { API_BASE_URL } from "../../config";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/Card";
+import { Button } from "../ui/Button";
+import { Input } from "../ui/Input";
+import { motion } from "framer-motion";
+import { Music, Heart, Plus } from "lucide-react";
+
+interface Playlist {
+  id: string;
+  name: string;
+  tracks_count: number;
+  owner: string;
+  public: boolean;
+  cover_image: string | null;
+}
+
+interface PlaylistSelectorProps {
+  onPlaylistSelect: (playlistId: string | null, playlistName?: string, playlistImage?: string | null) => void;
+  selectedPlaylistId: string | null;
+  onSpotifyLogin?: () => void;
+}
+
+export const PlaylistSelector = ({ onPlaylistSelect, selectedPlaylistId, onSpotifyLogin }: PlaylistSelectorProps) => {
+  const [playlists, setPlaylists] = useState<Playlist[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [showCreateInput, setShowCreateInput] = useState(false);
+  const [newPlaylistName, setNewPlaylistName] = useState("");
+  const [isCreating, setIsCreating] = useState(false);
+
+  useEffect(() => {
+    fetchPlaylists();
+  }, []);
+
+  const fetchPlaylists = async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const timestamp = Date.now()
+      const response = await fetch(`${API_BASE_URL}/spotify/playlists?t=${timestamp}`, {
+        credentials: "include"
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setPlaylists(data.playlists);
+      } else if (response.status === 401 || response.status === 400) {
+        setError("Your Spotify session has expired. Please log in again.");
+      } else {
+        setError("Failed to load playlists");
+      }
+    } catch (err) {
+      setError("Could not load playlists");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCreatePlaylist = async () => {
+    if (!newPlaylistName.trim()) return;
+
+    setIsCreating(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/spotify/playlists/create`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: newPlaylistName }),
+        credentials: "include"
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        onPlaylistSelect(data.id, data.name, null);
+        setNewPlaylistName("");
+        setShowCreateInput(false);
+        // Refresh list to include new playlist
+        fetchPlaylists();
+      } else {
+        alert("Failed to create playlist");
+      }
+    } catch (error) {
+      console.error("Error creating playlist:", error);
+      alert("Error creating playlist");
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  const handleLikedSongsSelect = () => {
+    onPlaylistSelect(null);
+  };
+
+  const handlePlaylistSelect = (playlistId: string, playlistName: string, playlistImage: string | null) => {
+    onPlaylistSelect(playlistId, playlistName, playlistImage);
+  };
+
+  if (loading) {
+    return (
+      <Card className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-0 shadow-2xl">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
+            <span className="ml-3 text-gray-600 dark:text-gray-300">Loading playlists...</span>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-0 shadow-2xl">
+        <CardContent className="p-6">
+          <div className="text-center text-red-600 dark:text-red-400">
+            {error}
+            {error === "Your Spotify session has expired. Please log in again." && (
+              <Button
+                onClick={onSpotifyLogin || (() => window.location.reload())}
+                variant="outline"
+                className="mt-4"
+              >
+                Login to Spotify
+              </Button>
+            )}
+            <Button onClick={fetchPlaylists} variant="outline" className="ml-4">
+              Retry
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-0 shadow-2xl">
+      <CardHeader className="text-center pb-4">
+        <CardTitle className="text-xl font-bold text-gray-900 dark:text-white">
+          Choose Destination
+        </CardTitle>
+        <CardDescription className="text-gray-600 dark:text-gray-300">
+          Select where to add your songs
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* Create New Playlist Option */}
+        <div className="pb-2 border-b border-gray-200 dark:border-gray-700">
+          {!showCreateInput ? (
+            <Button
+              onClick={() => setShowCreateInput(true)}
+              variant="outline"
+              className="w-full justify-start p-4 h-auto border-dashed border-2 hover:border-green-500 hover:text-green-600 dark:hover:text-green-400"
+            >
+              <Plus className="w-5 h-5 mr-3" />
+              <div className="text-left">
+                <div className="font-semibold">Create New Playlist</div>
+                <div className="text-sm opacity-70">Create a new playlist for these songs</div>
+              </div>
+            </Button>
+          ) : (
+            <div className="flex gap-2 items-center animate-in fade-in slide-in-from-top-2">
+              <Input
+                value={newPlaylistName}
+                onChange={(e) => setNewPlaylistName(e.target.value)}
+                placeholder="Enter playlist name..."
+                className="flex-1"
+                autoFocus
+              />
+              <Button
+                onClick={handleCreatePlaylist}
+                disabled={!newPlaylistName.trim() || isCreating}
+                className="bg-green-600 hover:bg-green-700 text-white"
+              >
+                {isCreating ? "Creating..." : "Create"}
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={() => setShowCreateInput(false)}
+                disabled={isCreating}
+              >
+                Cancel
+              </Button>
+            </div>
+          )}
+        </div>
+
+        {/* Liked Songs Option */}
+        <motion.div
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+        >
+          <Button
+            onClick={handleLikedSongsSelect}
+            variant={selectedPlaylistId === null ? "default" : "outline"}
+            className="w-full justify-start p-4 h-auto"
+          >
+            <Heart className="w-5 h-5 mr-3 text-red-500" />
+            <div className="text-left">
+              <div className="font-semibold">Liked Songs</div>
+              <div className="text-sm opacity-70">Add to your liked songs</div>
+            </div>
+          </Button>
+        </motion.div>
+
+        {/* User Playlists */}
+        <div className="space-y-2">
+          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">Your Playlists</h3>
+          <div className="max-h-60 overflow-y-auto space-y-2">
+            {playlists.map((playlist) => (
+              <motion.div
+                key={playlist.id}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <Button
+                  onClick={() => handlePlaylistSelect(playlist.id, playlist.name, playlist.cover_image)}
+                  variant={selectedPlaylistId === playlist.id ? "default" : "outline"}
+                  className="w-full justify-start p-4 h-auto"
+                >
+                  {playlist.cover_image ? (
+                    <img
+                      src={playlist.cover_image}
+                      alt={playlist.name}
+                      className="w-10 h-10 rounded-lg object-cover mr-3"
+                    />
+                  ) : (
+                    <Music className="w-5 h-5 mr-3" />
+                  )}
+                  <div className="text-left">
+                    <div className="font-semibold">{playlist.name}</div>
+                    <div className="text-sm opacity-70">
+                      {playlist.tracks_count} tracks • {playlist.owner} • {playlist.public ? 'Public' : 'Private'}
+                    </div>
+                  </div>
+                </Button>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}; 
