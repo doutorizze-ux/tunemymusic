@@ -1,0 +1,73 @@
+services:
+  # Backend API
+  - type: web
+    name: tunemymusic-api
+    env: docker
+    dockerfilePath: ./Dockerfile.api
+    branch: clean-main
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: SPOTIFY_CLIENT_ID
+        sync: false
+      - key: SPOTIFY_CLIENT_SECRET
+        sync: false
+      - key: SPOTIFY_REDIRECT_URI
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_REDIRECT_URI
+        sync: false
+      - key: YOUTUBE_API_KEY
+        sync: false
+      - key: AMAZON_CLIENT_ID
+        sync: false
+      - key: AMAZON_CLIENT_SECRET
+        sync: false
+      - key: AMAZON_REDIRECT_URI
+        sync: false
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: tunemymusic-redis
+          property: connectionString
+      - key: FRONTEND_URL
+        sync: false
+      - key: PORT
+        value: 8889
+
+  # Celery Worker
+  - type: worker
+    name: tunemymusic-celery
+    env: docker
+    dockerfilePath: ./Dockerfile.celery
+    branch: clean-main
+    envVars:
+      - key: SECRET_KEY
+        sync: false
+      - key: SPOTIFY_CLIENT_ID
+        sync: false
+      - key: SPOTIFY_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: YOUTUBE_API_KEY
+        sync: false
+      - key: AMAZON_CLIENT_ID
+        sync: false
+      - key: AMAZON_CLIENT_SECRET
+        sync: false
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: tunemymusic-redis
+          property: connectionString
+
+databases:
+  - name: tunemymusic-redis
+    plan: free
+    ipAllowList: []
