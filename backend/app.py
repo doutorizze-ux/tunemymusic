@@ -30,6 +30,7 @@ CORS(
         "https://playlifts.com",
         "https://www.playlifts.com",
         "https://api.playlifts.com",
+        "https://staysoft.comporhub.com",
         "http://localhost:5173",
         "http://localhost:3000",
     ],
@@ -37,12 +38,12 @@ CORS(
 )
 
 app.config.update(
-    SESSION_COOKIE_SAMESITE="Lax",
-    SESSION_COOKIE_SECURE=False,
+    SESSION_COOKIE_SAMESITE="None",
+    SESSION_COOKIE_SECURE=True,
 )
 
 SPOTIFY_REDIRECT_URI = os.getenv("SPOTIFY_REDIRECT_URI")
-FRONTEND_URL = os.getenv("FRONTEND_URL", "https://playlifts.com")
+FRONTEND_URL = os.getenv("FRONTEND_URL", "https://staysoft.comporhub.com")
 
 app.secret_key = os.getenv("SECRET_KEY")
 
@@ -204,7 +205,7 @@ def spotify_callback():
 
         resp = redirect(FRONTEND_URL)
         resp.set_cookie(
-            "is_logged_in", "true", samesite="Lax", secure=False, httponly=False
+            "is_logged_in", "true", samesite="None", secure=True, httponly=False
         )
         return resp
     except Exception:
@@ -403,7 +404,7 @@ def youtube_callback():
 
     resp = redirect(FRONTEND_URL)
     resp.set_cookie(
-        "is_youtube_logged_in", "true", samesite="Lax", secure=False, httponly=False
+        "is_youtube_logged_in", "true", samesite="None", secure=True, httponly=False
     )
     return resp
 
@@ -650,7 +651,7 @@ def deezer_callback():
         
         resp = redirect(FRONTEND_URL)
         resp.set_cookie(
-            "is_deezer_logged_in", "true", samesite="Lax", secure=False, httponly=False
+            "is_deezer_logged_in", "true", samesite="None", secure=True, httponly=False
         )
         return resp
         
@@ -758,7 +759,7 @@ def amazon_callback():
         
         resp = redirect(FRONTEND_URL)
         resp.set_cookie(
-            "is_amazon_logged_in", "true", samesite="Lax", secure=False, httponly=False
+            "is_amazon_logged_in", "true", samesite="None", secure=True, httponly=False
         )
         return resp
         
